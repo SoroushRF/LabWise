@@ -277,7 +277,7 @@ if (!result.success) {
 | --- | --- | --- | --- | --- | --- |
 | **3.2.1** | Pin Resolution Engine | **P2** | ❌ | Maps natural language ("second hole on the left", "pin 13") to exact pin references. Uses a breadboard topology model. | `synapse/pinResolver.ts` |
 | **3.2.2** | Instruction Sequencing | **P2** | ❌ | Gemini outputs ordered steps. Sequencer validates: power last, ground before components, no orphan nodes. | `synapse/sequencer.ts` |
-| **3.2.3** | PDF Upload and Parsing | **P1** | ❌ | `pdf.js` for client-side text extraction. User uploads PDF → extracted text feeds into prompt pipeline. | PDF upload UI |
+| **3.2.3** | PDF Upload and Parsing | **P1** | ✅ | `pdf.js` for client-side text extraction. User uploads PDF → extracted text feeds into prompt pipeline. | PDF upload UI |
 | **3.2.4** | Gemini Vision for Diagrams | **P2** | ❌ | For image-heavy pages, send image to Gemini with vision prompt to extract components from circuit diagrams. | Image extraction support |
 
 ---

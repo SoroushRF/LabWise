@@ -1,14 +1,9 @@
-/**
- * LabWise — Main Application
- *
- * Pre-Lab Assistant: AI extraction -> Netlist -> Wokwi execution.
- */
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { extractCircuit } from './synapse';
 import { useCircuitStore } from './store/circuitStore';
 import { toWokwiDiagram, type WokwiDiagram } from './wokwi/Mapper';
 import { WokwiEmbed } from './wokwi/WokwiEmbed';
+import { extractTextFromPDF } from './utils/pdfExtractor';
 import './App.css';
 
 function App() {
@@ -17,8 +12,33 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('');
   const [wokwiDiagram, setWokwiDiagram] = useState<WokwiDiagram | null>(null);
   const [extractedCode, setExtractedCode] = useState<string>('');
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const setArduinoCode = useCircuitStore((state) => state.setArduinoCode);
+
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingPdf(true);
+    setStatusMessage('Extracting text from PDF...');
+    
+    try {
+      const text = await extractTextFromPDF(file);
+      setLabInstructions(text);
+      setStatus('idle');
+      setStatusMessage('Text extracted from PDF. You can now tweak it or extract the circuit.');
+    } catch (error) {
+      console.error('PDF Extraction Error:', error);
+      setStatus('error');
+      setStatusMessage('Failed to read PDF. Try copy-pasting the text instead.');
+    } finally {
+      setIsProcessingPdf(false);
+      // Reset input so the same file can be uploaded again
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleExtract = async () => {
     if (!labInstructions.trim()) return;
@@ -50,10 +70,37 @@ function App() {
   return (
     <div id="labwise-app" style={{ display: 'flex', width: '100vw', height: '100vh', flexDirection: 'column', background: '#0f0f1a', color: '#fff' }}>
       
-      <header style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center' }}>
+      <header style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>LabWise</h1>
           <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.6 }}>AI Pre-Lab Environment</p>
+        </div>
+        <div>
+          <input 
+            type="file" 
+            accept="application/pdf" 
+            ref={fileInputRef} 
+            onChange={handlePdfUpload} 
+            style={{ display: 'none' }} 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessingPdf || status === 'loading'}
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: '#fff',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            {isProcessingPdf ? 'Reading PDF...' : '📄 Upload PDF Manual'}
+          </button>
         </div>
       </header>
 
@@ -61,28 +108,29 @@ function App() {
         
         <section style={{ width: '400px', borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-            <h2 style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>1. Paste Lab Instructions</h2>
+            <h2 style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>1. Lab Instructions</h2>
             <textarea 
-              placeholder="Paste your lab manual text here..."
+              placeholder="Paste manual text OR upload a PDF above..."
               value={labInstructions}
               onChange={(e) => setLabInstructions(e.target.value)}
-              style={{ width: '100%', height: '150px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '12px', borderRadius: '4px', resize: 'none' }}
+              style={{ width: '100%', height: '200px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '12px', borderRadius: '4px', resize: 'none' }}
             />
             <button 
               onClick={handleExtract}
-              disabled={status === 'loading'}
+              disabled={status === 'loading' || isProcessingPdf || !labInstructions.trim()}
               style={{ 
                 marginTop: '8px', 
                 width: '100%', 
-                padding: '8px', 
-                background: status === 'loading' ? '#444' : '#6366f1', 
+                padding: '10px', 
+                background: (status === 'loading' || isProcessingPdf || !labInstructions.trim()) ? '#444' : '#6366f1', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '4px', 
-                cursor: status === 'loading' ? 'not-allowed' : 'pointer' 
+                cursor: (status === 'loading' || isProcessingPdf || !labInstructions.trim()) ? 'not-allowed' : 'pointer',
+                fontWeight: 600
               }}
             >
-              {status === 'loading' ? 'Extracting...' : 'Extract Circuit & Code'}
+              {status === 'loading' ? 'Analyzing with Gemini...' : 'Extract Circuit & Code'}
             </button>
           </div>
           <div style={{ padding: '16px', flex: 1, overflowY: 'auto' }}>
