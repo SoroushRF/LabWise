@@ -159,7 +159,7 @@ Every task is assigned a priority tier:
 
 | Step | Task | Tier | Status | Details | Deliverable |
 | --- | --- | --- | --- | --- | --- |
-| **1.1.1** | Initialize Cargo Workspace | **P0** | ✅ | Root `Cargo.toml` with `[workspace]` members: `kernel`, `bridge`. Dependencies: `nalgebra`, `serde`, `serde_json`, `wasm-bindgen`. | Compiling workspace (11 tests pass) |
+| **1.1.1** | Initialize Cargo Workspace | **P0** | ✅ | Root `Cargo.toml` with `[workspace]` members. Root `package.json` with `concurrently` to run API and App together. | Root `package.json` + `dev.bat` |
 | **1.1.2** | Scaffold Frontend | **P0** | ✅ | `npx create-vite@latest ./projection -- --template react-ts`. Installed Zustand. | Vite dev server runs on :5173 |
 | **1.1.3** | Configure WASM Build Scripts | **P0** | ✅ | `scripts/build-wasm.sh` and `build-wasm.ps1` using `wasm-pack build --target web`. Output → `projection/src/wasm-pkg/`. | WASM builds in 2.4s |
 | **1.1.4** | **TEST:** WASM Integrity Check | **P0** | ✅ | `fn add(a, b)` in Rust → WASM → browser JS → `add(2,3) === 5`. Also tested `greet` and `validate_circuit`. | 3 tests pass in browser |
@@ -296,8 +296,8 @@ if (!result.success) {
 
 | Step | Task | Tier | Status | Details | Deliverable |
 | --- | --- | --- | --- | --- | --- |
-| **4.1.1** | Wokwi Mapping Logic | **P0** | ❌ | TS mapper: LabWise `ExtractionResult` → Wokwi `diagram.json` schema. Maps component types (`"arduino-uno"` → `"wokwi-arduino-uno"`), positions parts in a grid layout, generates connection arrays. | `wokwi/Mapper.ts` |
-| **4.1.2** | Embed Wokwi Simulator | **P0** | ❌ | `WokwiEmbed.tsx` React component. Takes `diagram.json` + Arduino source code, launches Wokwi via their embed API (`postMessage` or NPM wrapper). Displays live runnable circuit in the right panel. | `WokwiEmbed.tsx` |
+| **4.1.1** | Wokwi Mapping Logic | **P0** | ✅ | TS mapper: LabWise `ExtractionResult` → Wokwi `diagram.json` schema. Maps component types (`"arduino-uno"` → `"wokwi-arduino-uno"`), positions parts in a grid layout, generates connection arrays. | `wokwi/Mapper.ts` |
+| **4.1.2** | Embed Wokwi Simulator | **P0** | ✅ | `WokwiEmbed.tsx` React component. Takes `diagram.json` + Arduino source code, launches Wokwi via their embed API (`postMessage` or NPM wrapper). Displays live runnable circuit in the right panel. | `WokwiEmbed.tsx` |
 | **4.1.3** | Bi-directional Sync | **P1** | ❌ | Read state from Wokwi iframe: is simulation running? Serial monitor output? Display in LabWise UI sidebar. | UI indicators |
 
 #### Implementation Notes — Wokwi Mapper (Step 4.1.1)

@@ -1,0 +1,13 @@
+{
+  "name": "labwise-root",
+  "private": true,
+  "scripts": {
+    "dev:api": "cd api && npm run dev",
+    "dev:app": "cd projection && npm run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:app\"",
+    "install-all": "npm install && cd api && npm install && cd projection && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
