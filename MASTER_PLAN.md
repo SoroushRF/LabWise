@@ -228,7 +228,7 @@ Every task is assigned a priority tier:
 | **3.1.1** | Set up Hono API Proxy | **P0** | ✅ | Hono on CF Workers. `POST /api/gemini` proxies to Gemini 2.0 Flash. CORS for localhost (update for prod in Phase 5). Error handling, health check. API key in `.dev.vars`. | ✅ `api/src/index.ts` |
 | **3.1.2** | Develop Prompt Bible | **P0** | ✅ | Multi-section system prompt: (1) Role definition, (2) Output schema, (3) 25+ Wokwi component types, (4) Pin naming rules, (5) Node naming rules, (6) Anti-hallucination rules. Includes refinement prompt builder. | ✅ `synapse/promptBuilder.ts` |
 | **3.1.3** | Zod Schema Validation | **P0** | ✅ | Zod schemas mirroring all Wokwi-compatible components. `validateExtraction()` returns clean error messages for refinement loop. `ComponentTypeEnum` with 25+ types. | ✅ `synapse/schemas.ts` |
-| **3.1.4** | Extraction Pipeline + UI Wiring | **P0** | ❌ | Full pipeline: paste text → call API → Zod validate → populate Zustand store. React UI with textarea, extract button, status display. Loading states and error handling. | `synapse/extractionPipeline.ts` + `App.tsx` |
+| **3.1.4** | Extraction Pipeline + UI Wiring | **P0** | ✅ | Full pipeline: paste text → call API → Zod validate → populate Zustand store. React UI with textarea, extract button, status display. Loading states and error handling. | `synapse/extractionPipeline.ts` + `App.tsx` |
 | **3.1.5** | Recursive Refinement Loop | **P1** | ❌ | If Zod or Rust Governance rejects output, format errors into structured follow-up prompt. Send back to Gemini: "Your circuit was rejected because [errors]. Fix and resubmit." Max 2 retries. | Auto-correction in pipeline |
 
 #### Implementation Notes — Prompt Bible (Step 3.1.2)
