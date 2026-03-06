@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Labwise Netlist",
+  "description": "Schema for LabWise circuit netlist JSON. All circuits must conform to this schema before entering the physics engine.",
+  "type": "object",
+  "required": ["components", "connections", "metadata"],
+  "properties": {
+    "components": {
+      "type": "array",
+      "description": "All circuit components",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "pins", "tolerance", "electrical_limits"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique component identifier (e.g., R1, LED1, C1)"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "resistor",
+              "led",
+              "capacitor",
+              "op_amp",
+              "wire",
+              "battery",
+              "diode"
+            ],
+            "description": "Component type — must match a known type in ComponentLibrary"
+          },
+          "pins": {
+            "type": "array",
+            "description": "Component pins and their node connections",
+            "items": {
+              "type": "object",
+              "required": ["pin_id", "node"],
+              "properties": {
+                "pin_id": {
+                  "type": "string",
+                  "description": "Pin name (e.g., anode, cathode, pin1, pin2)"
+                },
+                "node": {
+                  "type": "string",
+                  "description": "Circuit node this pin connects to"
+                }
+              }
+            }
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Manufacturing tolerance as a fraction (0.05 = 5%)"
+          },
+          "electrical_limits": {
+            "type": "object",
+            "description": "Maximum electrical ratings for safety validation",
+            "properties": {
+              "voltage_max": {
+                "type": "number",
+                "description": "Maximum voltage across the component (volts)"
+              },
+              "current_max": {
+                "type": "number",
+                "description": "Maximum current through the component (amps)"
+              }
+            }
+          },
+          "value": {
+            "type": "number",
+            "description": "Component value (ohms, farads, volts, etc.)"
+          }
+        }
+      }
+    },
+    "connections": {
+      "type": "array",
+      "description": "Explicit wire connections between nodes",
+      "items": {
+        "type": "object",
+        "required": ["from_node", "to_node"],
+        "properties": {
+          "from_node": {
+            "type": "string",
+            "description": "Source node identifier"
+          },
+          "to_node": {
+            "type": "string",
+            "description": "Destination node identifier"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Circuit metadata",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable circuit name"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this circuit does"
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the circuit (e.g., EECS 1011 Lab 3)"
+        }
+      }
+    }
+  }
+}

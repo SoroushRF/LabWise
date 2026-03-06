@@ -1,0 +1,13 @@
+[package]
+name = "labwise-kernel"
+version = "0.1.0"
+edition = "2021"
+description = "LabWise physics engine — MNA solver, governance, and failure detection"
+
+[dependencies]
+nalgebra = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# Testing utilities will be added as needed

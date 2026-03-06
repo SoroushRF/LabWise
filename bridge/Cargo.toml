@@ -1,0 +1,14 @@
+[package]
+name = "labwise-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "LabWise WASM bridge — wasm-bindgen exports for the frontend"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+labwise-kernel = { path = "../kernel" }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
