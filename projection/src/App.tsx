@@ -7,35 +7,40 @@
 import { useState } from 'react';
 import { extractCircuit } from './synapse';
 import { useCircuitStore } from './store/circuitStore';
+import { toWokwiDiagram, type WokwiDiagram } from './wokwi/Mapper';
+import { WokwiEmbed } from './wokwi/WokwiEmbed';
 import './App.css';
 
 function App() {
   const [labInstructions, setLabInstructions] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
+  const [wokwiDiagram, setWokwiDiagram] = useState<WokwiDiagram | null>(null);
+  const [extractedCode, setExtractedCode] = useState<string>('');
   
-  const setNetlist = useCircuitStore((state) => state.setNetlist);
-  const arduinoCode = useCircuitStore((state) => state.arduinoCode);
+  const setArduinoCode = useCircuitStore((state) => state.setArduinoCode);
 
   const handleExtract = async () => {
     if (!labInstructions.trim()) return;
 
     setStatus('loading');
     setStatusMessage('Consulting Gemini AI...');
+    setWokwiDiagram(null);
 
     const response = await extractCircuit(labInstructions);
 
     if (response.status === 'success') {
       setStatus('success');
-      setStatusMessage(`Successfully extracted ${response.data.components.length} components and ${response.data.connections.length} connections.`);
+      setStatusMessage(`Successfully extracted ${response.data.components.length} components.`);
       
-      // Update the global store with the extracted netlist
-      // Note: We'll map the 'synapse' extraction format to our internal 'Netlist' format in a future Step 4.x
-      // For now, we print to console and update the status
-      console.log('Extracted Data:', response.data);
-      
-      // In a real flow, we'll convert response.data to Netlist and call setNetlist
-      // This is planned for Phase 4 (Wokwi Mapper)
+      const diagram = toWokwiDiagram(response.data);
+      setWokwiDiagram(diagram);
+
+      const code = response.data.code || '// No code found';
+      setExtractedCode(code);
+      setArduinoCode(code);
+
+      console.log('Wokwi Diagram:', diagram);
     } else {
       setStatus('error');
       setStatusMessage(response.message || 'Extraction failed.');
@@ -45,7 +50,6 @@ function App() {
   return (
     <div id="labwise-app" style={{ display: 'flex', width: '100vw', height: '100vh', flexDirection: 'column', background: '#0f0f1a', color: '#fff' }}>
       
-      {/* Header */}
       <header style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>LabWise</h1>
@@ -53,10 +57,8 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content Workspace */}
       <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         
-        {/* Left Sidebar: Lab Manual Input & AI Chat */}
         <section style={{ width: '400px', borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <h2 style={{ fontSize: '1rem', margin: '0 0 8px 0' }}>1. Paste Lab Instructions</h2>
@@ -93,7 +95,7 @@ function App() {
               {statusMessage || 'Waiting for input...'}
             </div>
 
-            {arduinoCode && status === 'success' && (
+            {extractedCode && status === 'success' && (
               <div style={{ marginTop: '20px' }}>
                 <h3 style={{ fontSize: '0.9rem', color: '#6366f1' }}>Extracted Code:</h3>
                 <pre style={{ 
@@ -102,28 +104,26 @@ function App() {
                   borderRadius: '4px', 
                   fontSize: '0.75rem', 
                   overflow: 'auto',
-                  maxHeight: '200px'
+                  maxHeight: '300px'
                 }}>
-                  {arduinoCode}
+                  {extractedCode}
                 </pre>
               </div>
             )}
           </div>
         </section>
 
-        {/* Center/Right: Circuit View & Wokwi Simulation */}
         <section style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px' }}>
-          <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.5rem', opacity: 0.8, marginBottom: '8px' }}>Wokwi Simulation Environment</h2>
-              <p style={{ opacity: 0.5 }}>Extract a circuit to launch the emulator.</p>
-              {status === 'success' && (
-                <div style={{ marginTop: '20px', color: '#6366f1', fontWeight: 600 }}>
-                  Ready to map to Wokwi! (Planned for Phase 4)
-                </div>
-              )}
+          {wokwiDiagram ? (
+            <WokwiEmbed diagram={wokwiDiagram} code={extractedCode} />
+          ) : (
+            <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ fontSize: '1.5rem', opacity: 0.8, marginBottom: '8px' }}>Wokwi Simulation Environment</h2>
+                <p style={{ opacity: 0.5 }}>Extract a circuit to launch the emulator.</p>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
       </main>
