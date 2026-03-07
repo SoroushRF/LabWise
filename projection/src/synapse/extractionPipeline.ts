@@ -63,22 +63,26 @@ export async function extractCircuit(labText: string): Promise<ExtractionRespons
 
     lastRawOutput = rawJson;
 
-    // Parse the raw JSON
+    // Smart JSON extraction (handles ```json ... ``` blocks)
+    const cleanedJson = extractJson(rawJson);
+    
+    // Parse the cleaned JSON
     let parsed: unknown;
     try {
-      parsed = JSON.parse(rawJson);
+      parsed = JSON.parse(cleanedJson);
     } catch {
-      lastErrors = [`Invalid JSON returned by Gemini. Raw output starts with: "${rawJson.slice(0, 100)}..."`];
+      const snippet = rawJson.length > 200 ? rawJson.slice(0, 200) + '...' : rawJson;
+      lastErrors = [`Invalid JSON. Failed to parse: "${snippet}"`];
       
       if (attempt === MAX_RETRIES) {
         return {
           status: 'error',
-          message: 'Gemini returned invalid JSON after all retries.',
+          message: 'Gemini returned invalid JSON structure.',
           errors: lastErrors,
           rawOutput: rawJson,
         };
       }
-      continue; // Retry
+      continue;
     }
 
     // Validate with Zod
@@ -135,4 +139,24 @@ async function callGeminiProxy(prompt: string): Promise<string> {
   }
 
   return text;
+}
+
+/**
+ * Helper to strip markdown formatting (like ```json ... ```) 
+ * that Gemini sometimes includes even when asked not to.
+ */
+function extractJson(text: string): string {
+  // If text contains ```json ... ```, extract the content
+  const match = text.match(/```json\s?([\s\S]*?)\s?```/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  
+  // If it's just ``` ... ```
+  const genericMatch = text.match(/```\s?([\s\S]*?)\s?```/);
+  if (genericMatch && genericMatch[1]) {
+    return genericMatch[1].trim();
+  }
+
+  return text.trim();
 }

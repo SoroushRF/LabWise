@@ -1,25 +1,51 @@
 import * as pdfjs from 'pdfjs-dist';
 
-// Set the worker source to the one from the node_modules so it works in development
-// Note: In production, you might want to host this worker file or use a CDN.
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// MATCH THIS TO THE VERSION IN package.json
+const PDFJS_VERSION = '5.5.207';
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.mjs`;
 
 /**
  * Extracts all text from a PDF file.
  */
 export async function extractTextFromPDF(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-  let fullText = '';
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Validate we're sending a real array buffer
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('PDF file is empty.');
+    }
 
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const pageText = textContent.items
-      .map((item: any) => item.str)
-      .join(' ');
-    fullText += pageText + '\n\n';
+    const loadingTask = pdfjs.getDocument({ 
+      data: arrayBuffer,
+      useSystemFonts: true,
+      // Increase verbosity for logging in the console
+      verbosity: 1, 
+    });
+    
+    const pdf = await loadingTask.promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      
+      fullText += pageText + ' ';
+    }
+
+    const cleanedText = fullText.replace(/\s+/g, ' ').trim();
+    if (!cleanedText) {
+      throw new Error('Could not find readable text (PDF might be an image/scan).');
+    }
+
+    return cleanedText;
+  } catch (error) {
+    // This logs to the BROWSER console (F12)
+    console.error('Detailed PDF Extraction Error:', error);
+    throw error;
   }
-
-  return fullText;
 }

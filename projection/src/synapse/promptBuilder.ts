@@ -82,18 +82,19 @@ Use ONLY these exact type strings:
 - "dht22" — Temperature & humidity sensor
 - "pir-sensor" — Motion sensor
 - "hc-sr04" — Ultrasonic distance sensor
+- "hall-effect-sensor" — Magnetic field sensor
 
 ### Power
 - "battery" — Battery or DC power supply
 
 ### Other
-- "wire" — Jumper wire
+- "wire" — Jumper wire (Must have at least one pin if listed as a component)
 
 ## PIN NAMING RULES
 - For Arduino: Use the actual pin names: "2", "3", "13", "A0", "5V", "3.3V", "GND", "GND.1", "GND.2"
 - For resistors/capacitors: Use "1" and "2"
 - For LEDs: Use "A" (anode) and "C" (cathode)
-- For sensors: Use their actual pin names (e.g. "VCC", "GND", "TRIG", "ECHO" for HC-SR04)
+- For sensors: Use their actual pin names (e.g. "VCC", "GND", "OUT", "TRIG", "ECHO")
 - For pushbuttons: Use "1.l", "2.l", "1.r", "2.r" (left/right legs)
 
 ## NODE NAMING RULES
@@ -104,9 +105,11 @@ Use ONLY these exact type strings:
 - 3.3V power is "vcc_3v3"
 
 ## CONNECTION RULES
-- The "from" and "to" fields use the format "component_id:pin_id"
-- Every connection must reference real component IDs and pin IDs from the components list
-- If components share a node, create a connection for each pair
+- The "from" and "to" fields MUST be in the format "component_id:pin_id".
+- NEVER use global node names like "gnd" or "vcc_5v" in the "from" or "to" fields.
+- Connections link PINS of COMPONENTS, not nodes directly.
+- Every connection must reference real component IDs and pin IDs from the components list.
+- If components share a node, create a connection for each pair. For example, if R1:1 and LED1:A are both on node "led_wire", create: { "from": "R1:1", "to": "LED1:A" }.
 
 ## CODE RULES
 - If the lab includes Arduino/C++ code, include it in the "code" field as a string
@@ -119,6 +122,7 @@ Use ONLY these exact type strings:
 - If a component type is ambiguous, pick the most common interpretation
 - If a pin connection is unclear, OMIT it rather than guess
 - NEVER invent components or connections not mentioned in the text
+- If a component like "magnet" is mentioned but has no electrical pins, omit it from the components list.
 - If the lab says "connect LED to pin 13" without specifying a resistor, still include only what's stated
 `;
 

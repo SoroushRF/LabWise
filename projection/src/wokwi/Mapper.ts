@@ -47,24 +47,43 @@ const TYPE_MAP: Record<string, string> = {
   'lcd1602': 'wokwi-lcd1602',
   'hc-sr04': 'wokwi-hc-sr04',
   'dht22': 'wokwi-dht22',
-  'battery': 'wokwi-battery',
-  // Add more as needed based on synapse/schemas.ts
+  'battery': 'wokwi-vcc', // Using VCC as the standard 5V power rail
+  'hall-effect-sensor': 'wokwi-analog-joystick', // Placeholder for Hall sensor
 };
+
+/**
+ * Maps AI pin names to Wokwi-specific pin names.
+ */
+function mapPin(partType: string, pinId: string): string {
+  const pid = pinId.toLowerCase();
+  
+  if (partType === 'led') {
+    if (pid === 'c' || pid === 'cathode' || pid === 'k') return 'C';
+    if (pid === 'a' || pid === 'anode') return 'A';
+  }
+  
+  if (partType === 'battery' || partType === 'wokwi-vcc') {
+    // Wokwi-vcc and wokwi-battery standard pins
+    if (pid === 'vcc' || pid === '5v' || pid === 'positive' || pid === 'pos' || pid === '+') return 'VCC';
+    if (pid === 'gnd' || pid === 'negative' || pid === 'neg' || pid === '-') return 'GND';
+  }
+
+  return pinId;
+}
 
 /**
  * Converts LabWise JSON to Wokwi Diagram JSON.
  */
 export function toWokwiDiagram(extraction: ExtractionResult): WokwiDiagram {
   const parts: WokwiPart[] = extraction.components.map((comp, index) => {
-    const wokwiType = TYPE_MAP[comp.type] || `wokwi-${comp.type}`;
+    let wokwiType = TYPE_MAP[comp.type] || `wokwi-${comp.type}`;
     
     // Auto-layout in a simple grid for now
     const top = Math.floor(index / 3) * 150;
     const left = (index % 3) * 200;
 
     const attrs: Record<string, any> = { ...comp.attrs };
-    if (comp.value) {
-      // Wokwi resistors expect "value" as a string, e.g., "1000"
+    if (comp.type === 'resistor' && comp.value) {
       attrs.value = String(comp.value);
     }
 
@@ -78,11 +97,23 @@ export function toWokwiDiagram(extraction: ExtractionResult): WokwiDiagram {
   });
 
   const connections: WokwiConnection[] = extraction.connections.map((conn) => {
+    const fromCompId = conn.from.split(':')[0];
+    const toCompId = conn.to.split(':')[0];
+
+    const fromComp = extraction.components.find(c => c.id === fromCompId);
+    const toComp = extraction.components.find(c => c.id === toCompId);
+
+    const fromPinOriginal = conn.from.split(':')[1];
+    const toPinOriginal = conn.to.split(':')[1];
+
+    const mappedFromPin = fromComp ? mapPin(fromComp.type, fromPinOriginal) : fromPinOriginal;
+    const mappedToPin = toComp ? mapPin(toComp.type, toPinOriginal) : toPinOriginal;
+
     return [
-      conn.from,
-      conn.to,
+      `${fromCompId}:${mappedFromPin}`,
+      `${toCompId}:${mappedToPin}`,
       conn.color || 'green',
-      [] // No specific routing path defined yet
+      []
     ];
   });
 

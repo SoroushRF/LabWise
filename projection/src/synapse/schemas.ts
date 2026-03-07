@@ -48,6 +48,7 @@ export const ComponentTypeEnum = z.enum([
   'dht22',
   'pir-sensor',
   'hc-sr04',           // Ultrasonic distance
+  'hall-effect-sensor',
 
   // Power
   'battery',
@@ -102,7 +103,17 @@ export function validateExtraction(raw: unknown): {
   const result = ExtractionResultSchema.safeParse(raw);
 
   if (result.success) {
-    return { success: true, data: result.data };
+    // Post-processing: Filter out any components that Gemini added but have no pins
+    // (e.g. magnets, breadboards, etc. which aren't simulation-relevant)
+    const filteredComponents = result.data.components.filter(c => c.pins && c.pins.length > 0);
+    
+    return { 
+      success: true, 
+      data: {
+        ...result.data,
+        components: filteredComponents
+      } 
+    };
   }
 
   // Format Zod errors into human-readable strings (for the refinement loop)

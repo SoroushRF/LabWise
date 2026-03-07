@@ -54,8 +54,10 @@ app.post("/api/gemini", async (c) => {
     return c.json({ error: "Missing or invalid 'prompt' field" }, 400);
   }
 
-  const model = body.model || "gemini-2.0-flash";
+  const model = body.model || "gemini-2.5-flash-lite"; // User's requested model
   const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  console.log(`[Proxy] Extracting with model: ${model}`);
 
   try {
     const geminiResponse = await fetch(geminiUrl, {
@@ -68,7 +70,7 @@ app.post("/api/gemini", async (c) => {
           },
         ],
         generationConfig: {
-          temperature: 0.1,       // Low temp for deterministic circuit extraction
+          temperature: 0.1,
           maxOutputTokens: 8192,
         },
       }),
@@ -76,17 +78,24 @@ app.post("/api/gemini", async (c) => {
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
-      console.error("Gemini API error:", geminiResponse.status, errText);
+      console.error(`[Error] Gemini API (${geminiResponse.status}):`, errText);
       return c.json(
         { error: `Gemini API returned ${geminiResponse.status}`, details: errText },
         geminiResponse.status as any
       );
     }
 
-    const geminiData = await geminiResponse.json();
+    const geminiData: any = await geminiResponse.json();
+    
+    // Log a snippet for debugging
+    const firstPart = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (firstPart) {
+      console.log(`[Success] Received response (${firstPart.length} chars). Snippet: ${firstPart.slice(0, 100)}...`);
+    }
+
     return c.json(geminiData);
   } catch (err) {
-    console.error("Gemini proxy error:", err);
+    console.error("[Error] Proxy Exception:", err);
     return c.json({ error: "Failed to reach Gemini API", details: String(err) }, 502);
   }
 });

@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { extractCircuit } from './synapse';
 import { useCircuitStore } from './store/circuitStore';
 import { toWokwiDiagram, type WokwiDiagram } from './wokwi/Mapper';
-import { WokwiEmbed } from './wokwi/WokwiEmbed';
+import { CircuitBoard } from './wokwi/CircuitBoard';
 import { extractTextFromPDF } from './utils/pdfExtractor';
 import './App.css';
 
@@ -13,6 +13,8 @@ function App() {
   const [wokwiDiagram, setWokwiDiagram] = useState<WokwiDiagram | null>(null);
   const [extractedCode, setExtractedCode] = useState<string>('');
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [rawAiResponse, setRawAiResponse] = useState<string>('');
+  const [showDebug, setShowDebug] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setArduinoCode = useCircuitStore((state) => state.setArduinoCode);
@@ -52,6 +54,8 @@ function App() {
     if (response.status === 'success') {
       setStatus('success');
       setStatusMessage(`Successfully extracted ${response.data.components.length} components.`);
+      setRawAiResponse('');
+      setShowDebug(false);
       
       const diagram = toWokwiDiagram(response.data);
       setWokwiDiagram(diagram);
@@ -63,7 +67,14 @@ function App() {
       console.log('Wokwi Diagram:', diagram);
     } else {
       setStatus('error');
-      setStatusMessage(response.message || 'Extraction failed.');
+      setRawAiResponse(response.rawOutput || '');
+      
+      // Better handling for 429 Rate Limits
+      if (response.message.includes('429')) {
+        setStatusMessage('AI is taking a breather (Rate Limited). Please wait 20-30 seconds and click Extract again.');
+      } else {
+        setStatusMessage(response.message || 'Extraction failed.');
+      }
     }
   };
 
@@ -143,6 +154,32 @@ function App() {
               {statusMessage || 'Waiting for input...'}
             </div>
 
+            {status === 'error' && rawAiResponse && (
+              <div style={{ marginTop: '12px' }}>
+                <button 
+                  onClick={() => setShowDebug(!showDebug)}
+                  style={{ background: 'transparent', border: '1px solid #444', color: '#888', fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  {showDebug ? 'Hide Raw AI Output' : 'Show Raw AI Output'}
+                </button>
+                {showDebug && (
+                  <pre style={{ 
+                    marginTop: '8px', 
+                    background: 'rgba(255,0,0,0.05)', 
+                    padding: '8px', 
+                    borderRadius: '4px', 
+                    fontSize: '0.65rem', 
+                    color: '#fca5a5', 
+                    overflow: 'auto',
+                    border: '1px solid rgba(255,0,0,0.2)',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {rawAiResponse}
+                  </pre>
+                )}
+              </div>
+            )}
+
             {extractedCode && status === 'success' && (
               <div style={{ marginTop: '20px' }}>
                 <h3 style={{ fontSize: '0.9rem', color: '#6366f1' }}>Extracted Code:</h3>
@@ -163,7 +200,7 @@ function App() {
 
         <section style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px' }}>
           {wokwiDiagram ? (
-            <WokwiEmbed diagram={wokwiDiagram} code={extractedCode} />
+            <CircuitBoard diagram={wokwiDiagram} />
           ) : (
             <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ textAlign: 'center' }}>
