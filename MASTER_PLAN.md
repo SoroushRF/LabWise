@@ -74,7 +74,7 @@ graph LR
 | **Validation** | Rust (`wasm-pack`) + `nalgebra` | Pre-simulation physics checks, MNA solver, structural governance |
 | **Bridge** | WASM + `wasm-bindgen` | Rust-to-JS interop |
 | **API** | Hono on Cloudflare Workers | Gemini API proxy, protect secrets |
-| **AI** | Gemini 2.0 Flash (primary) / Pro (fallback) | Circuit & code extraction from lab manual text |
+| **AI** | Gemini 2.5 Flash (primary) / Pro (fallback) | Circuit & code extraction from lab manual text |
 | **Deploy** | Cloudflare Pages + Workers | Free, no cold starts, 300+ edge locations |
 
 ---

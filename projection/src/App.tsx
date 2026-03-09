@@ -18,6 +18,8 @@ function App() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setArduinoCode = useCircuitStore((state) => state.setArduinoCode);
+  const setNetlist = useCircuitStore((state) => state.setNetlist);
+  const governanceResult = useCircuitStore((state) => state.governanceResult);
 
   const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,13 +58,17 @@ function App() {
       setStatusMessage(`Successfully extracted ${response.data.components.length} components.`);
       setRawAiResponse('');
       setShowDebug(false);
-      
-      const diagram = toWokwiDiagram(response.data);
-      setWokwiDiagram(diagram);
-
+      const netlist = response.data as any; // Cast for now until types fully match
       const code = response.data.code || '// No code found';
       setExtractedCode(code);
+      
+      // Send to Zustand store (This triggers the Rust WASM solve/validate)
+      setNetlist(netlist);
       setArduinoCode(code);
+
+      // We still update local Wokwi visual state
+      const diagram = toWokwiDiagram(response.data);
+      setWokwiDiagram(diagram);
 
       console.log('Wokwi Diagram:', diagram);
     } else {
@@ -176,6 +182,39 @@ function App() {
                   }}>
                     {rawAiResponse}
                   </pre>
+                )}
+              </div>
+            )}
+
+            {governanceResult && (
+              <div style={{ 
+                marginTop: '16px', 
+                padding: '12px', 
+                borderRadius: '6px', 
+                background: governanceResult.status === 'valid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${governanceResult.status === 'valid' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+              }}>
+                <h3 style={{ 
+                  fontSize: '0.85rem', 
+                  margin: '0 0 8px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: governanceResult.status === 'valid' ? '#34d399' : '#f87171'
+                }}>
+                  {governanceResult.status === 'valid' ? '✅ Physics Validation Passed' : '❌ Physics Validation Failed'}
+                </h3>
+                
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.8rem', opacity: 0.9 }}>
+                  {governanceResult.message}
+                </p>
+
+                {governanceResult.status === 'rejected' && governanceResult.errors && (
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.8rem', color: '#fca5a5' }}>
+                    {governanceResult.errors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
                 )}
               </div>
             )}
